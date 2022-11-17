@@ -1,0 +1,28 @@
+From 475eab86b2b345ba35eeecf51a242edcb5cbf532 Mon Sep 17 00:00:00 2001
+From: Randolph Sapp <rs@ti.com>
+Date: Thu, 13 Oct 2022 15:52:16 -0500
+Subject: [PATCH] build: buildvars.mk: No error on enum-conversion
+
+Don't error out on an implicit enum conversion since all apphint macros
+rely on this functionality.
+
+Signed-off-by: Randolph Sapp <rs@ti.com>
+---
+ build/linux/buildvars.mk | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/build/linux/buildvars.mk b/build/linux/buildvars.mk
+index 1e3bd89..71883b4 100644
+--- a/build/linux/buildvars.mk
++++ b/build/linux/buildvars.mk
+@@ -222,6 +222,7 @@ TESTED_KBUILD_FLAGS := \
+  $(call kernel-cc-option,-Wno-unused-but-set-variable) \
+  $(call kernel-cc-option,-Wno-ignored-qualifiers) \
+  $(call kernel-cc-option,-Wno-error=implicit-fallthrough) \
++ $(call kernel-cc-option,-Wno-error=enum-conversion) \
+  $(call kernel-cc-optional-warning,-Wbad-function-cast) \
+  $(call kernel-cc-optional-warning,-Wcast-qual) \
+  $(call kernel-cc-optional-warning,-Wcast-align) \
+-- 
+2.34.1
+
