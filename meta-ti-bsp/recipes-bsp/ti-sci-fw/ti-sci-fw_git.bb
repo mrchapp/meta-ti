@@ -1,13 +1,15 @@
 require recipes-bsp/ti-linux-fw/ti-linux-fw.inc
+require recipes-ti/includes/ti-paths.inc
 
-DEPENDS = "openssl-native u-boot-mkimage-native dtc-native"
-DEPENDS:append:j7200-evm-k3r5 = " virtual/bootloader"
-DEPENDS:append:j7200-hs-evm-k3r5 = " virtual/bootloader"
-DEPENDS:append:j721s2-evm-k3r5 = " virtual/bootloader"
-DEPENDS:append:j721s2-hs-evm-k3r5 = " virtual/bootloader"
-DEPENDS:append:am64xx-evm-k3r5 = " virtual/bootloader"
-DEPENDS:append:am64xx-hs-evm-k3r5 = " virtual/bootloader"
-DEPENDS:append:am62xx-evm-k3r5 = " virtual/bootloader"
+DEPENDS = "openssl-native u-boot-mkimage-native dtc-native virtual/bootloader"
+DEPENDS:remove:am65xx-evm-k3r5 = "virtual/bootloader"
+DEPENDS:remove:am65xx-evm-k3r5-sr2 = "virtual/bootloader"
+DEPENDS:remove:am65xx-hs-evm-k3r5 = "virtual/bootloader"
+DEPENDS:remove:am65xx-hs-evm-k3r5-sr2 = "virtual/bootloader"
+DEPENDS:remove:j721e-evm-k3r5 = "virtual/bootloader"
+DEPENDS:remove:j721e-hs-evm-k3r5 = "virtual/bootloader"
+DEPENDS:remove:j721e-hs-evm-k3r5-sr1-1 = "virtual/bootloader"
+DEPENDS:append = "${@ '' if d.getVar('TI_SECURE_DEV_PKG_K3') else ' ti-k3-secdev-native' }"
 
 CLEANBROKEN = "1"
 PR = "${INC_PR}.2"
@@ -18,28 +20,29 @@ COMPATIBLE_MACHINE:aarch64 = "null"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-TI_SECURE_DEV_PKG ?= ""
+TI_SECURE_DEV_PKG = "${@ d.getVar('TI_SECURE_DEV_PKG_K3') or '${TI_K3_SECDEV_INSTALL_DIR}' }"
 export TI_SECURE_DEV_PKG
 
 SYSFW_SOC ?= "unknown"
+SYSFW_SUFFIX ?= "unknown"
 SYSFW_CONFIG ?= "unknown"
 
-SYSFW_PREFIX = "ti-sci-firmware"
-SYSFW_PREFIX:j721e-evm-k3r5 = "ti-fs-firmware"
-SYSFW_PREFIX:j721e-hs-evm-k3r5 = "ti-fs-firmware"
-SYSFW_PREFIX:j721e-hs-evm-k3r5-sr1-1 = "ti-fs-firmware"
-SYSFW_PREFIX:j7200-evm-k3r5 = "ti-fs-firmware"
-SYSFW_PREFIX:j7200-hs-evm-k3r5 = "ti-fs-firmware"
-SYSFW_PREFIX:j721s2-evm-k3r5 = "ti-fs-firmware"
-SYSFW_PREFIX:j721s2-hs-evm-k3r5 = "ti-fs-firmware"
-SYSFW_PREFIX:am62xx-evm-k3r5 = "ti-fs-firmware"
+SYSFW_PREFIX = "sci"
+SYSFW_PREFIX:j721e-evm-k3r5 = "fs"
+SYSFW_PREFIX:j721e-hs-evm-k3r5 = "fs"
+SYSFW_PREFIX:j721e-hs-evm-k3r5-sr1-1 = "fs"
+SYSFW_PREFIX:j7200-evm-k3r5 = "fs"
+SYSFW_PREFIX:j7200-hs-evm-k3r5 = "fs"
+SYSFW_PREFIX:j721s2-evm-k3r5 = "fs"
+SYSFW_PREFIX:j721s2-hs-evm-k3r5 = "fs"
+SYSFW_PREFIX:j784s4-evm-k3r5 = "fs"
+SYSFW_PREFIX:am62xx-evm-k3r5 = "fs"
+SYSFW_PREFIX:am62xx-lp-evm-k3r5 = "fs"
 
-SYSFW_SUFFIX ?= "unknown"
+SYSFW_TISCI = "${S}/ti-sysfw/ti-${SYSFW_PREFIX}-firmware-${SYSFW_SOC}-*.bin"
 
-SYSFW_BASE = "${SYSFW_PREFIX}-${SYSFW_SOC}-${SYSFW_SUFFIX}"
-SYSFW_BASE:append = "${@['','*']['${SYSFW_SUFFIX}' == 'hs']}"
-
-SYSFW_TISCI = "${S}/ti-sysfw/${SYSFW_BASE}.bin"
+SYSFW_TIBOOT3 = "tiboot3-${SYSFW_SOC}-${SYSFW_SUFFIX}-${SYSFW_CONFIG}.bin"
+SYSFW_TIBOOT3_SYMLINK ?= "tiboot3.bin"
 
 SYSFW_BINARY = "sysfw-${SYSFW_SOC}-${SYSFW_CONFIG}.itb"
 SYSFW_VBINARY = "sysfw-${PV}-${SYSFW_SOC}-${SYSFW_CONFIG}.itb"
@@ -54,21 +57,17 @@ LD[unexport] = "1"
 do_configure[noexec] = "1"
 
 EXTRA_OEMAKE = "\
-    CROSS_COMPILE=${TARGET_PREFIX} SYSFW_DL_URL='' SYSFW_HS_DL_URL='' SYSFW_HS_INNER_CERT_DL_URL='' \
-    SYSFW_PATH="${SYSFW_TISCI}" SOC=${SYSFW_SOC} CONFIG=${SYSFW_CONFIG} \
+    CROSS_COMPILE=${TARGET_PREFIX} SOC=${SYSFW_SOC} SOC_TYPE=${SYSFW_SUFFIX} \
+    CONFIG=${SYSFW_CONFIG} SYSFW_DIR="${S}/ti-sysfw" \
+    SBL="${STAGING_DIR_HOST}/boot/u-boot-spl.bin" \
 "
-EXTRA_OEMAKE_HS = " \
-    HS=1 SW_REV=1 SYSFW_HS_PATH="${S}/ti-sysfw/${SYSFW_BASE}-enc.bin" SYSFW_HS_INNER_CERT_PATH="${S}/ti-sysfw/${SYSFW_BASE}-cert.bin" \
-"
-EXTRA_OEMAKE:append = "${@['',' ${EXTRA_OEMAKE_HS}']['${SYSFW_SUFFIX}' == 'hs']}"
-
-EXTRA_OEMAKE:append:j7200-evm-k3r5 = " SBL="${STAGING_DIR_HOST}/boot/u-boot-spl.bin""
-EXTRA_OEMAKE:append:j7200-hs-evm-k3r5 = " SBL="${STAGING_DIR_HOST}/boot/u-boot-spl.bin""
-EXTRA_OEMAKE:append:j721s2-evm-k3r5 = " SBL="${STAGING_DIR_HOST}/boot/u-boot-spl.bin""
-EXTRA_OEMAKE:append:j721s2-hs-evm-k3r5 = " SBL="${STAGING_DIR_HOST}/boot/u-boot-spl.bin""
-EXTRA_OEMAKE:append:am64xx-evm-k3r5 = " SBL="${STAGING_DIR_HOST}/boot/u-boot-spl.bin""
-EXTRA_OEMAKE:append:am64xx-hs-evm-k3r5 = " SBL="${STAGING_DIR_HOST}/boot/u-boot-spl.bin""
-EXTRA_OEMAKE:append:am62xx-evm-k3r5 = " SBL="${STAGING_DIR_HOST}/boot/u-boot-spl.bin""
+EXTRA_OEMAKE:remove:am65xx-evm-k3r5 = "SBL="${STAGING_DIR_HOST}/boot/u-boot-spl.bin""
+EXTRA_OEMAKE:remove:am65xx-evm-k3r5-sr2 = "SBL="${STAGING_DIR_HOST}/boot/u-boot-spl.bin""
+EXTRA_OEMAKE:remove:am65xx-hs-evm-k3r5 = "SBL="${STAGING_DIR_HOST}/boot/u-boot-spl.bin""
+EXTRA_OEMAKE:remove:am65xx-hs-evm-k3r5-sr2 = "SBL="${STAGING_DIR_HOST}/boot/u-boot-spl.bin""
+EXTRA_OEMAKE:remove:j721e-evm-k3r5 = "SBL="${STAGING_DIR_HOST}/boot/u-boot-spl.bin""
+EXTRA_OEMAKE:remove:j721e-hs-evm-k3r5 = "SBL="${STAGING_DIR_HOST}/boot/u-boot-spl.bin""
+EXTRA_OEMAKE:remove:j721e-hs-evm-k3r5-sr1-1 = "SBL="${STAGING_DIR_HOST}/boot/u-boot-spl.bin""
 
 do_compile() {
 	cd ${WORKDIR}/imggen/
@@ -77,10 +76,20 @@ do_compile() {
 
 do_install() {
 	install -d ${D}/boot
-	install -m 644 ${WORKDIR}/imggen/${SYSFW_BINARY} ${D}/boot/${SYSFW_VBINARY}
-	ln -sf ${SYSFW_VBINARY} ${D}/boot/${SYSFW_IMAGE}
-	if [ ! -z "${SYSFW_SYMLINK}" ]; then
-		ln -sf ${SYSFW_VBINARY} ${D}/boot/${SYSFW_SYMLINK}
+
+	if [ -f "${WORKDIR}/imggen/${SYSFW_BINARY}" ]; then
+		install -m 644 ${WORKDIR}/imggen/${SYSFW_BINARY} ${D}/boot/${SYSFW_VBINARY}
+		ln -sf ${SYSFW_VBINARY} ${D}/boot/${SYSFW_IMAGE}
+		if [ ! -z "${SYSFW_SYMLINK}" ]; then
+			ln -sf ${SYSFW_VBINARY} ${D}/boot/${SYSFW_SYMLINK}
+		fi
+	fi
+
+	if [ -f "${WORKDIR}/imggen/${SYSFW_TIBOOT3}" ]; then
+		install -m 644 ${WORKDIR}/imggen/${SYSFW_TIBOOT3} ${D}/boot/${SYSFW_TIBOOT3}
+		if [ ! -z "${SYSFW_TIBOOT3_SYMLINK}" ]; then
+			ln -sf ${SYSFW_TIBOOT3} ${D}/boot/${SYSFW_TIBOOT3_SYMLINK}
+		fi
 	fi
 }
 
@@ -90,120 +99,23 @@ inherit deploy
 
 do_deploy () {
 	install -d ${DEPLOYDIR}
-	install -m 644 ${WORKDIR}/imggen/${SYSFW_BINARY} ${DEPLOYDIR}/${SYSFW_VBINARY}
-	rm -f ${DEPLOYDIR}/${SYSFW_IMAGE}
-	ln -sf ${SYSFW_VBINARY} ${DEPLOYDIR}/${SYSFW_IMAGE}
-	if [ ! -z "${SYSFW_SYMLINK}" ]; then
-		rm -f ${DEPLOYDIR}/${SYSFW_SYMLINK}
-		ln -sf ${SYSFW_VBINARY} ${DEPLOYDIR}/${SYSFW_SYMLINK}
+
+	if [ -f "${WORKDIR}/imggen/${SYSFW_BINARY}" ]; then
+		install -m 644 ${WORKDIR}/imggen/${SYSFW_BINARY} ${DEPLOYDIR}/${SYSFW_VBINARY}
+		ln -sf ${SYSFW_VBINARY} ${DEPLOYDIR}/${SYSFW_IMAGE}
+		if [ ! -z "${SYSFW_SYMLINK}" ]; then
+			ln -sf ${SYSFW_VBINARY} ${DEPLOYDIR}/${SYSFW_SYMLINK}
+			install -m 644 ${SYSFW_TISCI} ${DEPLOYDIR}/
+		fi
 	fi
 
-	install -m 644 ${SYSFW_TISCI} ${DEPLOYDIR}/
-}
-
-do_install:j7200-evm-k3r5() {
-	install -d ${D}/boot
-	install -m 644 ${WORKDIR}/imggen/${UBOOT_BINARY} ${D}/boot/${UBOOT_IMAGE}
-	ln -sf ${UBOOT_IMAGE} ${D}/boot/${UBOOT_SYMLINK}
-	ln -sf ${UBOOT_IMAGE} ${D}/boot/${UBOOT_BINARY}
-}
-
-do_deploy:j7200-evm-k3r5() {
-	install -d ${DEPLOYDIR}
-	install -m 644 ${WORKDIR}/imggen/${UBOOT_BINARY} ${DEPLOYDIR}/${UBOOT_IMAGE}
-	ln -sf ${UBOOT_IMAGE} ${DEPLOYDIR}/${UBOOT_SYMLINK}
-	ln -sf ${UBOOT_IMAGE} ${DEPLOYDIR}/${UBOOT_BINARY}
-	install -m 644 ${SYSFW_TISCI} ${DEPLOYDIR}/
-}
-
-do_install:j7200-hs-evm-k3r5() {
-	install -d ${D}/boot
-	install -m 644 ${WORKDIR}/imggen/${UBOOT_BINARY} ${D}/boot/${UBOOT_IMAGE}
-	ln -sf ${UBOOT_IMAGE} ${D}/boot/${UBOOT_SYMLINK}
-	ln -sf ${UBOOT_IMAGE} ${D}/boot/${UBOOT_BINARY}
-}
-
-do_deploy:j7200-hs-evm-k3r5() {
-	install -d ${DEPLOYDIR}
-	install -m 644 ${WORKDIR}/imggen/${UBOOT_BINARY} ${DEPLOYDIR}/${UBOOT_IMAGE}
-	ln -sf ${UBOOT_IMAGE} ${DEPLOYDIR}/${UBOOT_SYMLINK}
-	ln -sf ${UBOOT_IMAGE} ${DEPLOYDIR}/${UBOOT_BINARY}
-	install -m 644 ${SYSFW_TISCI} ${DEPLOYDIR}/
-}
-
-do_install:j721s2-evm-k3r5() {
-	install -d ${D}/boot
-	install -m 644 ${WORKDIR}/imggen/${UBOOT_BINARY} ${D}/boot/${UBOOT_IMAGE}
-	ln -sf ${UBOOT_IMAGE} ${D}/boot/${UBOOT_SYMLINK}
-	ln -sf ${UBOOT_IMAGE} ${D}/boot/${UBOOT_BINARY}
-}
-
-do_deploy:j721s2-evm-k3r5() {
-	install -d ${DEPLOYDIR}
-	install -m 644 ${WORKDIR}/imggen/${UBOOT_BINARY} ${DEPLOYDIR}/${UBOOT_IMAGE}
-	ln -sf ${UBOOT_IMAGE} ${DEPLOYDIR}/${UBOOT_SYMLINK}
-	ln -sf ${UBOOT_IMAGE} ${DEPLOYDIR}/${UBOOT_BINARY}
-	install -m 644 ${SYSFW_TISCI} ${DEPLOYDIR}/
-}
-
-do_install:j721s2-hs-evm-k3r5() {
-	install -d ${D}/boot
-	install -m 644 ${WORKDIR}/imggen/${UBOOT_BINARY} ${D}/boot/${UBOOT_IMAGE}
-	ln -sf ${UBOOT_IMAGE} ${D}/boot/${UBOOT_SYMLINK}
-	ln -sf ${UBOOT_IMAGE} ${D}/boot/${UBOOT_BINARY}
-}
-
-do_deploy:j721s2-hs-evm-k3r5() {
-	install -d ${DEPLOYDIR}
-	install -m 644 ${WORKDIR}/imggen/${UBOOT_BINARY} ${DEPLOYDIR}/${UBOOT_IMAGE}
-	ln -sf ${UBOOT_IMAGE} ${DEPLOYDIR}/${UBOOT_SYMLINK}
-	ln -sf ${UBOOT_IMAGE} ${DEPLOYDIR}/${UBOOT_BINARY}
-	install -m 644 ${SYSFW_TISCI} ${DEPLOYDIR}/
-}
-
-do_install:am64xx-evm-k3r5() {
-	install -d ${D}/boot
-	install -m 644 ${WORKDIR}/imggen/${UBOOT_BINARY} ${D}/boot/${UBOOT_IMAGE}
-	ln -sf ${UBOOT_IMAGE} ${D}/boot/${UBOOT_SYMLINK}
-	ln -sf ${UBOOT_IMAGE} ${D}/boot/${UBOOT_BINARY}
-}
-
-do_deploy:am64xx-evm-k3r5() {
-	install -d ${DEPLOYDIR}
-	install -m 644 ${WORKDIR}/imggen/${UBOOT_BINARY} ${DEPLOYDIR}/${UBOOT_IMAGE}
-	ln -sf ${UBOOT_IMAGE} ${DEPLOYDIR}/${UBOOT_SYMLINK}
-	ln -sf ${UBOOT_IMAGE} ${DEPLOYDIR}/${UBOOT_BINARY}
-	install -m 644 ${SYSFW_TISCI} ${DEPLOYDIR}/
-}
-
-do_install:am64xx-hs-evm-k3r5() {
-	install -d ${D}/boot
-	install -m 644 ${WORKDIR}/imggen/${UBOOT_BINARY} ${D}/boot/${UBOOT_IMAGE}
-	ln -sf ${UBOOT_IMAGE} ${D}/boot/${UBOOT_SYMLINK}
-	ln -sf ${UBOOT_IMAGE} ${D}/boot/${UBOOT_BINARY}
-}
-
-do_deploy:am64xx-hs-evm-k3r5() {
-	install -d ${DEPLOYDIR}
-	install -m 644 ${WORKDIR}/imggen/${UBOOT_BINARY} ${DEPLOYDIR}/${UBOOT_IMAGE}
-	ln -sf ${UBOOT_IMAGE} ${DEPLOYDIR}/${UBOOT_SYMLINK}
-	ln -sf ${UBOOT_IMAGE} ${DEPLOYDIR}/${UBOOT_BINARY}
-	install -m 644 ${SYSFW_TISCI} ${DEPLOYDIR}/
-}
-
-do_install:am62xx-evm-k3r5() {
-	install -d ${D}/boot
-	install -m 644 ${WORKDIR}/imggen/${UBOOT_BINARY} ${D}/boot/${UBOOT_IMAGE}
-	ln -sf ${UBOOT_IMAGE} ${D}/boot/${UBOOT_SYMLINK}
-	ln -sf ${UBOOT_IMAGE} ${D}/boot/${UBOOT_BINARY}
-}
-
-do_deploy:am62xx-evm-k3r5() {
-	install -d ${DEPLOYDIR}
-	install -m 644 ${WORKDIR}/imggen/${UBOOT_BINARY} ${DEPLOYDIR}/${UBOOT_IMAGE}
-	ln -sf ${UBOOT_IMAGE} ${DEPLOYDIR}/${UBOOT_SYMLINK}
-	ln -sf ${UBOOT_IMAGE} ${DEPLOYDIR}/${UBOOT_BINARY}
-	install -m 644 ${SYSFW_TISCI} ${DEPLOYDIR}/
+	if [ -f "${WORKDIR}/imggen/${SYSFW_TIBOOT3}" ]; then
+		install -m 644 ${WORKDIR}/imggen/${SYSFW_TIBOOT3} ${DEPLOYDIR}/${SYSFW_TIBOOT3}
+		if [ ! -z "${SYSFW_TIBOOT3_SYMLINK}" ]; then
+			ln -sf ${SYSFW_TIBOOT3} ${DEPLOYDIR}/${SYSFW_TIBOOT3_SYMLINK}
+			install -m 644 ${SYSFW_TISCI} ${DEPLOYDIR}/
+		fi
+	fi
 }
 
 addtask deploy before do_build after do_compile

@@ -15,7 +15,8 @@ PREFERRED_PROVIDER_virtual/bootloader ?= "u-boot-ti-staging"
 PREFERRED_PROVIDER_u-boot ?= "u-boot-ti-staging"
 
 KERNEL_IMAGETYPE = "Image"
-KERNEL_IMAGETYPES = "Image vmlinux.gz"
+KERNEL_IMAGETYPES = "Image vmlinux.gz fitImage"
+KERNEL_CLASSES += "kernel-fitimage"
 
 UBOOT_ARCH = "arm"
 UBOOT_ENTRYPOINT = "0x80008000"
@@ -49,3 +50,5 @@ WKS_FILE ?= "sdimage-2part-efi.wks"
 do_image_wic[depends] += "virtual/bootloader:do_deploy"
 do_image_wic[mcdepends] += "mc::k3r5:virtual/bootloader:do_deploy mc::k3r5:ti-sci-fw:do_deploy"
 do_image_tar[mcdepends] += "mc::k3r5:virtual/bootloader:do_deploy mc::k3r5:ti-sci-fw:do_deploy"
+
+TI_SECURE_DEV_PKG = "${TI_SECURE_DEV_PKG_K3}"

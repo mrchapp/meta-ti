@@ -11,7 +11,7 @@ MACHINE_KERNEL_PR:append = "b"
 PR = "${MACHINE_KERNEL_PR}"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
-COMPATIBLE_MACHINE = "j721e|j721s2|am62xx"
+COMPATIBLE_MACHINE = "j721e|j721s2|j784s4|am62xx"
 
 DEPENDS = "virtual/kernel"
 
@@ -20,25 +20,22 @@ PROVIDES = "virtual/gpudriver"
 BRANCH = "linuxws/dunfell/k5.10/${PV}_unified_fw_pagesize"
 
 SRC_URI = " \
-    git://git.ti.com/graphics/ti-img-rogue-driver.git;branch=${BRANCH} \
+    git://git.ti.com/git/graphics/ti-img-rogue-driver.git;protocol=https;branch=${BRANCH} \
     file://0001-compiler-support-OpenEmbedded-nodistro-internal-aarc.patch \
-    file://0001-rgxinit.c-cast-boolean-value-to-IMG_BOOL.patch \
 "
 
 S = "${WORKDIR}/git"
 
-SRCREV = "6d3d62a15ceb85b719c35f34c6c9e35f556b406b"
+SRCREV = "c901804e8221d477983a6f7224a9cdc6e832f050"
 
 TARGET_PRODUCT:j721e = "j721e_linux"
 TARGET_PRODUCT:j721s2 = "j721s2_linux"
+TARGET_PRODUCT:j784s4 = "j784s4_linux"
 TARGET_PRODUCT:am62xx = "am62_linux"
-TARGET_BVNC:j721e = "22.104.208.318"
-TARGET_BVNC:j721s2 = "36.53.104.796"
-TARGET_BVNC:am62xx = "33.15.11.3"
 PVR_BUILD = "release"
 PVR_WS = "wayland"
 
-EXTRA_OEMAKE += 'KERNELDIR="${STAGING_KERNEL_DIR}" RGX_BVNC=${TARGET_BVNC} BUILD=${PVR_BUILD} PVR_BUILD_DIR=${TARGET_PRODUCT} WINDOW_SYSTEM=${PVR_WS}'
+EXTRA_OEMAKE += 'KERNELDIR="${STAGING_KERNEL_DIR}" BUILD=${PVR_BUILD} PVR_BUILD_DIR=${TARGET_PRODUCT} WINDOW_SYSTEM=${PVR_WS}'
 
 do_install() {
     make -C ${STAGING_KERNEL_DIR} M=${B}/binary_${TARGET_PRODUCT}_${PVR_WS}_${PVR_BUILD}/target_aarch64/kbuild INSTALL_MOD_PATH=${D}${root_prefix} PREFIX=${STAGING_DIR_HOST} modules_install

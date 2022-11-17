@@ -1,5 +1,5 @@
-PV:k3 = "2.6+2.7-rc0"
-SRCREV_tfa:k3 = "453abc80b2eacbf2816c838e47e40f063227d934"
+PV:k3 = "2.7"
+SRCREV_tfa:k3 = "1309c6c805190bd376c0561597653f3f8ecd0f58"
 SRC_URI:k3 = "git://git.trustedfirmware.org/TF-A/trusted-firmware-a.git;protocol=https;name=tfa;branch=master"
 COMPATIBLE_MACHINE:k3 = "k3"
 TFA_BUILD_TARGET:k3 = "all"
@@ -30,7 +30,7 @@ do_compile:append:am65xx-hs-evm() {
 	tfa_sign_k3hs
 }
 
-do_compile:append:am64xx-hs-evm() {
+do_compile:append:am64xx-evm() {
 	tfa_sign_k3hs
 }
 
