@@ -1,5 +1,5 @@
 require recipes-bsp/ti-linux-fw/ti-linux-fw.inc
-require recipes-ti/includes/ti-paths.inc
+include recipes-ti/includes/ti-paths.inc
 
 DEPENDS = "openssl-native u-boot-mkimage-native dtc-native virtual/bootloader"
 DEPENDS:remove:am65xx-evm-k3r5 = "virtual/bootloader"
